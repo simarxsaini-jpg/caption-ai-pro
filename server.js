@@ -88,7 +88,16 @@ Make timestamps sequential and realistic. Each caption 1-2 sentences. Total ~12 
     const data = await response.json();
     const raw = data.content.map(b => b.text || '').join('');
     const clean = raw.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(clean);
+   let parsed;
+try {
+  parsed = JSON.parse(clean);
+} catch (e) {
+  const fixed = clean
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
+    .replace(/,\s*}/g, '}')
+    .replace(/,\s*]/g, ']');
+  parsed = JSON.parse(fixed);
+}
 
     res.json({ success: true, data: parsed });
 
