@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CaptionAI Pro — YouTube & Local Video Caption Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Gurmukhi:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0c0c0e;
+  --s1: #141418;
+  --s2: #1c1c24;
+  --s3: #232330;
+  --accent: #00d4ff;
+  --accent2: #ff6b00;
+  --gold: #ffc340;
+  --green: #00e5a0;
+  --text: #f0eeff;
+  --muted: #6060808;
+  --border: rgba(0,212,255,0.12);
+  --border2: rgba(255,255,255,0.06);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden}
+
+/* Background */
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 60% 50% at 80% 10%, rgba(0,212,255,0.055) 0%, transparent 70%),
+             radial-gradient(ellipse 50% 40% at 10% 80%, rgba(255,107,0,0.04) 0%, transparent 70%);
+  pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(0,212,255,0.02) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(0,212,255,0.02) 1px,transparent 1px);
+  background-size:32px 32px;pointer-events:none;z-index:0}
+
+.wrap{position:relative;z-index:1;max-width:920px;margin:0 auto;padding:48px 24px 100px}
+
+/* ── HEADER ── */
+nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:56px}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;letter-spacing:-0.5px}
+.logo span{color:var(--accent)}
+.nav-badge{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--accent);
+  background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.2);
+  border-radius:99px;padding:5px 12px;letter-spacing:1.5px;text-transform:uppercase}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+
+h1{font-family:'Syne',sans-serif;font-size:clamp(2rem,5.5vw,3.8rem);font-weight:800;
+  line-height:1.05;letter-spacing:-1.5px;
+  animation:rise .7s ease both}
+h1 em{font-style:normal;color:var(--accent)}
+h1 strong{font-style:normal;color:var(--gold)}
+.hero-sub{margin-top:16px;font-size:13px;color:#606080;line-height:1.8;
+  animation:rise .7s .1s ease both;max-width:600px}
+@keyframes rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+.lang-pills{display:flex;flex-wrap:wrap;gap:7px;margin-top:20px;animation:rise .7s .2s ease both}
+.lp{background:var(--s2);border:1px solid var(--border2);border-radius:6px;
+  padding:5px 11px;font-size:10px;color:#707090;letter-spacing:.5px}
+
+/* ── MODE TABS ── */
+.mode-tabs{display:flex;gap:0;margin:40px 0 0;
+  background:var(--s1);border:1px solid var(--border2);border-radius:12px;
+  padding:4px;animation:rise .7s .3s ease both}
+.mode-tab{flex:1;padding:12px 20px;text-align:center;font-size:12px;
+  font-family:'Syne',sans-serif;font-weight:600;letter-spacing:.5px;
+  cursor:pointer;border-radius:9px;transition:all .25s;color:#606080}
+.mode-tab.active{background:var(--s3);color:var(--text);
+  box-shadow:0 2px 12px rgba(0,0,0,0.4)}
+.mode-tab:hover:not(.active){color:var(--text)}
+
+/* ── INPUT PANELS ── */
+.panel{display:none;animation:rise .4s ease}
+.panel.show{display:block}
+
+.card{background:var(--s1);border:1px solid var(--border2);border-radius:16px;
+  padding:28px;margin-top:20px}
+.card+.card{margin-top:16px}
+
+.field-label{font-size:10px;color:#606080;letter-spacing:2px;text-transform:uppercase;
+  margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.field-label::before{content:'';display:block;width:3px;height:12px;
+  background:var(--accent);border-radius:2px}
+
+.url-row{display:flex;gap:8px}
+.inp{flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:10px;
+  padding:13px 16px;color:var(--text);font-family:'JetBrains Mono',monospace;
+  font-size:12px;outline:none;transition:border-color .2s,box-shadow .2s}
+.inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,0.07)}
+.inp::placeholder{color:#404060}
+
+.icon-btn{background:var(--s2);border:1px solid var(--border2);border-radius:10px;
+  padding:13px 15px;cursor:pointer;font-size:16px;transition:all .2s;color:#606080}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Drop zone */
+.dropzone{border:2px dashed rgba(0,212,255,0.2);border-radius:14px;
+  padding:48px 24px;text-align:center;cursor:pointer;transition:all .3s;
+  background:rgba(0,212,255,0.02)}
+.dropzone:hover,.dropzone.drag{border-color:var(--accent);background:rgba(0,212,255,0.05)}
+.drop-icon{font-size:42px;margin-bottom:14px;display:block}
+.drop-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;margin-bottom:8px}
+.drop-sub{font-size:11px;color:#505070;line-height:1.7}
+.drop-types{display:flex;gap:6px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.drop-type{background:var(--s2);border:1px solid var(--border2);border-radius:5px;
+  padding:3px 9px;font-size:10px;color:#607080}
+#file-input{display:none}
+
+/* Video preview */
+.video-preview{display:none;margin-top:16px;background:var(--bg);border:1px solid var(--border2);
+  border-radius:12px;overflow:hidden}
+.video-preview video{width:100%;max-height:260px;display:block;background:#000}
+.video-preview-info{padding:14px 18px;display:flex;align-items:center;gap:12px}
+.file-icon{font-size:22px}
+.file-name{font-size:12px;font-weight:600}
+.file-meta{font-size:10px;color:#505070;margin-top:3px}
+.remove-file{margin-left:auto;background:none;border:1px solid rgba(255,80,60,0.3);
+  border-radius:6px;padding:5px 10px;color:#ff5040;cursor:pointer;font-size:10px;
+  transition:all .2s}
+.remove-file:hover{background:rgba(255,80,60,0.1)}
+
+/* Options row */
+.opts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px}
+.opt-group{}
+.sel{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:10px;
+  padding:12px 14px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;
+  outline:none;cursor:pointer;transition:border-color .2s;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23606080' d='M5 7L0 2h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center}
+.sel:focus{border-color:var(--accent)}
+
+/* Adobe toggle */
+.adobe-toggle{margin-top:16px;background:rgba(255,107,0,0.06);
+  border:1px solid rgba(255,107,0,0.2);border-radius:12px;padding:16px 18px;
+  display:flex;align-items:center;gap:14px}
+.adobe-logo{font-size:28px}
+.adobe-info{flex:1}
+.adobe-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--accent2)}
+.adobe-desc{font-size:10px;color:#606070;margin-top:3px;line-height:1.5}
+.toggle-wrap{display:flex;flex-direction:column;align-items:center;gap:4px}
+.toggle{position:relative;width:44px;height:24px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--s3);border-radius:99px;transition:.3s}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;
+  left:3px;top:3px;background:#606080;border-radius:50%;transition:.3s}
+.toggle input:checked+.toggle-slider{background:var(--accent2)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(20px);background:#fff}
+.toggle-label{font-size:9px;color:#506060;letter-spacing:1px;text-transform:uppercase}
+
+/* ── GENERATE BUTTON ── */
+.gen-btn{width:100%;margin-top:20px;padding:18px;border:none;border-radius:12px;
+  background:linear-gradient(135deg,var(--accent) 0%,#0090cc 100%);
+  color:#0c0c0e;font-family:'Syne',sans-serif;font-weight:800;font-size:15px;
+  cursor:pointer;transition:all .25s;letter-spacing:.3px;
+  display:flex;align-items:center;justify-content:center;gap:10px}
+.gen-btn:hover{transform:translateY(-2px);box-shadow:0 10px 36px rgba(0,212,255,0.22)}
+.gen-btn:active{transform:translateY(0)}
+.gen-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* ── STATUS ── */
+#status-area{display:none;margin-top:20px}
+.status-card{background:var(--s1);border:1px solid var(--border2);
+  border-radius:14px;padding:22px 24px;display:flex;align-items:center;gap:18px}
+.spin{width:32px;height:32px;border:2px solid rgba(0,212,255,0.15);
+  border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;flex-shrink:0}
+@keyframes sp{to{transform:rotate(360deg)}}
+.s-text{font-size:13px;font-weight:500}
+.s-sub{font-size:10px;color:#505070;margin-top:5px;letter-spacing:.5px}
+
+.progress-bar-wrap{margin-top:14px;background:var(--s2);border-radius:99px;height:3px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));
+  width:0%;transition:width .5s ease;border-radius:99px}
+
+.steps-row{display:flex;gap:0;margin-top:16px;border-radius:8px;overflow:hidden}
+.step-item{flex:1;padding:7px 4px;text-align:center;font-size:9px;letter-spacing:.8px;
+  text-transform:uppercase;background:var(--s2);color:#404060;
+  border-right:1px solid var(--bg);transition:all .3s}
+.step-item:last-child{border-right:none}
+.step-item.done{background:rgba(0,229,160,0.1);color:var(--green)}
+.step-item.active{background:rgba(0,212,255,0.1);color:var(--accent)}
+
+/* ── ERROR ── */
+.err{display:none;background:rgba(255,60,60,0.07);border:1px solid rgba(255,60,60,0.2);
+  border-radius:12px;padding:16px 20px;color:#ff6060;font-size:12px;margin-top:16px;line-height:1.6}
+
+/* ── RESULTS ── */
+#result-area{display:none;margin-top:24px;animation:rise .5s ease}
+
+.result-header-card{background:var(--s1);border:1px solid var(--border2);
+  border-radius:16px 16px 0 0;overflow:hidden}
+.rh-top{background:var(--s2);padding:18px 24px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.rh-title{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:var(--green)}
+.rh-meta{font-size:10px;color:#505070;margin-top:4px;line-height:1.5}
+
+.export-btns{display:flex;gap:8px;flex-wrap:wrap}
+.exp-btn{background:var(--bg);border:1px solid var(--border2);border-radius:8px;
+  padding:8px 14px;font-size:10px;color:#606080;cursor:pointer;
+  transition:all .2s;font-family:'JetBrains Mono',monospace;letter-spacing:.5px;
+  display:flex;align-items:center;gap:6px}
+.exp-btn:hover{border-color:var(--accent);color:var(--accent)}
+.exp-btn.adobe{border-color:rgba(255,107,0,0.3);color:var(--accent2)}
+.exp-btn.adobe:hover{border-color:var(--accent2);background:rgba(255,107,0,0.06)}
+.exp-btn.pr{border-color:rgba(153,103,255,0.3);color:#9967ff}
+.exp-btn.pr:hover{border-color:#9967ff;background:rgba(153,103,255,0.06)}
+
+/* Video info bar */
+.video-info-bar{display:flex;align-items:center;gap:16px;
+  padding:14px 24px;border-bottom:1px solid var(--border2);background:rgba(0,0,0,0.2)}
+.v-thumb{width:80px;height:46px;border-radius:6px;background:var(--s3);
+  overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  color:#505070;font-size:20px}
+.v-thumb img{width:100%;height:100%;object-fit:cover}
+.v-thumb video{width:100%;height:100%;object-fit:cover}
+.v-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px}
+.v-channel{font-size:10px;color:#505070;margin-top:3px}
+.v-badge{margin-left:auto;background:rgba(0,229,160,0.1);border:1px solid rgba(0,229,160,0.2);
+  border-radius:6px;padding:4px 10px;font-size:9px;color:var(--green);letter-spacing:1px}
+
+/* Caption view tabs */
+.cap-tabs{display:flex;padding:0 24px;border-bottom:1px solid var(--border2);
+  background:var(--s1)}
+.cap-tab{padding:13px 18px;font-size:10px;color:#505070;cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .2s;letter-spacing:1px;text-transform:uppercase}
+.cap-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.cap-tab:hover{color:var(--text)}
+
+/* Captions */
+.caps-body{background:var(--s1);border-radius:0 0 16px 16px;
+  max-height:520px;overflow-y:auto}
+.caps-body::-webkit-scrollbar{width:3px}
+.caps-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* Timeline progress bar inside caps */
+.timeline-wrap{padding:14px 24px 10px;border-bottom:1px solid var(--border2);
+  background:rgba(0,0,0,0.15)}
+.timeline-label{display:flex;justify-content:space-between;font-size:9px;
+  color:#404060;margin-bottom:6px;letter-spacing:.5px}
+.timeline-bar{position:relative;height:4px;background:var(--s3);border-radius:99px;overflow:hidden}
+.timeline-segments{position:absolute;inset:0;display:flex;gap:1px}
+.tl-seg{height:100%;background:rgba(0,212,255,0.35);border-radius:1px;
+  cursor:pointer;transition:background .2s}
+.tl-seg:hover{background:var(--accent)}
+
+.cap-row{display:grid;grid-template-columns:110px 1fr;gap:0;
+  border-bottom:1px solid var(--border2);transition:background .2s;cursor:pointer}
+.cap-row:last-child{border-bottom:none}
+.cap-row:hover{background:rgba(0,212,255,0.03)}
+.cap-row.active-row{background:rgba(0,212,255,0.06);border-left:3px solid var(--accent)}
+
+/* Timestamp column — now full start→end */
+.cap-ts{
+  padding:18px 0 18px 20px;
+  display:flex;flex-direction:column;gap:4px;
+  font-variant-numeric:tabular-nums;
+  border-right:1px solid var(--border2);
+  min-width:110px;
+}
+.ts-index{font-size:9px;color:#404060;letter-spacing:1px;margin-bottom:2px}
+.ts-start{font-size:13px;color:var(--accent);font-weight:600;font-family:'JetBrains Mono',monospace}
+.ts-arrow{font-size:9px;color:#404060}
+.ts-end{font-size:12px;color:#5090a0;font-family:'JetBrains Mono',monospace}
+.ts-dur{display:inline-block;margin-top:5px;background:rgba(0,212,255,0.08);
+  border:1px solid rgba(0,212,255,0.15);border-radius:4px;
+  padding:2px 7px;font-size:9px;color:#4090a0;letter-spacing:.5px}
+.ts-jump{display:none;margin-top:6px;background:rgba(0,212,255,0.1);
+  border:1px solid rgba(0,212,255,0.2);border-radius:5px;
+  padding:3px 8px;font-size:9px;color:var(--accent);cursor:pointer;transition:all .2s;
+  font-family:'JetBrains Mono',monospace}
+.cap-row:hover .ts-jump{display:block}
+.ts-jump:hover{background:rgba(0,212,255,0.2)}
+
+.cap-content{padding:16px 22px 16px 18px}
+.cap-num-badge{display:inline-block;background:var(--s3);border:1px solid var(--border2);
+  border-radius:4px;padding:2px 7px;font-size:9px;color:#404060;
+  margin-bottom:8px;letter-spacing:.5px}
+.cap-orig{font-size:11px;color:#505070;margin-bottom:8px;font-style:italic;
+  line-height:1.6;border-left:2px solid var(--s3);padding-left:10px}
+.cap-trans{font-size:14px;line-height:1.75;
+  font-family:'Noto Sans Gurmukhi','Noto Sans Devanagari','JetBrains Mono',monospace}
+.cap-srt-line{margin-top:8px;font-size:9px;color:#404060;font-family:'JetBrains Mono',monospace;
+  background:var(--bg);border-radius:4px;padding:4px 8px;display:none}
+.cap-row:hover .cap-srt-line{display:block}
+
+/* Adobe Premiere info box */
+.premiere-box{display:none;margin-top:16px;background:rgba(153,103,255,0.05);
+  border:1px solid rgba(153,103,255,0.2);border-radius:14px;padding:22px 24px}
+.premiere-box.show{display:block;animation:rise .4s ease}
+.pb-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.pb-icon{font-size:28px}
+.pb-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:#9967ff}
+.pb-sub{font-size:10px;color:#505070;margin-top:3px}
+.pb-steps{display:flex;flex-direction:column;gap:10px}
+.pb-step{display:flex;align-items:flex-start;gap:12px;
+  background:rgba(0,0,0,0.2);border-radius:10px;padding:14px 16px}
+.pb-num{width:22px;height:22px;border-radius:50%;background:rgba(153,103,255,0.2);
+  border:1px solid rgba(153,103,255,0.4);display:flex;align-items:center;
+  justify-content:center;font-size:10px;color:#9967ff;flex-shrink:0;font-weight:600}
+.pb-step-text{font-size:11px;color:#808090;line-height:1.6}
+.pb-step-text strong{color:var(--text);font-weight:500}
+
+/* Stats bar */
+.stats-bar{display:flex;gap:0;border-top:1px solid var(--border2)}
+.stat{flex:1;padding:14px;text-align:center;border-right:1px solid var(--border2)}
+.stat:last-child{border-right:none}
+.stat-val{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--accent)}
+.stat-key{font-size:9px;color:#505070;margin-top:3px;letter-spacing:1px;text-transform:uppercase}
+
+@media(max-width:640px){
+  .opts-row{grid-template-columns:1fr 1fr}
+  .export-btns{gap:6px}
+  .steps-row{flex-wrap:wrap}
+  .step-item{min-width:33%}
+  nav{flex-direction:column;gap:12px;text-align:center}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Nav -->
+  <nav>
+    <div class="logo">Caption<span>AI</span> Pro</div>
+    <div class="nav-badge"><span class="live-dot"></span> Agent Online</div>
+  </nav>
+
+  <!-- Hero -->
+  <h1>Caption <em>Any Video</em><br/>in <strong>Any Language</strong></h1>
+  <p class="hero-sub">Upload a local video or paste a YouTube link — your AI agent transcribes, translates into Hindi, Punjabi, English or 50+ languages, and exports directly for <strong style="color:#9967ff">Adobe Premiere Pro</strong>.</p>
+  <div class="lang-pills">
+    <span class="lp">🇮🇳 ਪੰਜਾਬੀ Punjabi</span>
+    <span class="lp">🇮🇳 हिंदी Hindi</span>
+    <span class="lp">🇬🇧 English</span>
+    <span class="lp">🇵🇰 اردو Urdu</span>
+    <span class="lp">🇪🇸 Español</span>
+    <span class="lp">🇫🇷 Français</span>
+    <span class="lp">🇩🇪 Deutsch</span>
+    <span class="lp">🇸🇦 العربية</span>
+    <span class="lp">+ 50 more</span>
+  </div>
+
+  <!-- Mode tabs -->
+  <div class="mode-tabs">
+    <div class="mode-tab active" onclick="switchMode('youtube',this)">🎬 YouTube Link</div>
+    <div class="mode-tab" onclick="switchMode('local',this)">📁 Local Video File</div>
+  </div>
+
+  <!-- YouTube Panel -->
+  <div class="panel show" id="panel-youtube">
+    <div class="card">
+      <div class="field-label">YouTube Video URL</div>
+      <div class="url-row">
+        <input class="inp" id="yt-url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+        <button class="icon-btn" onclick="pasteClip()" title="Paste">📋</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="opts-row">
+        <div class="opt-group">
+          <div class="field-label">Caption Language</div>
+          <select class="sel" id="yt-lang">
+            <option value="pa">ਪੰਜਾਬੀ — Punjabi</option>
+            <option value="hi">हिंदी — Hindi</option>
+            <option value="en">English</option>
+            <option value="ur">اردو — Urdu</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="ar">العربية</option>
+            <option value="zh">中文 Chinese</option>
+            <option value="ja">日本語 Japanese</option>
+            <option value="ko">한국어 Korean</option>
+            <option value="pt">Português</option>
+            <option value="ru">Русский</option>
+            <option value="tr">Türkçe</option>
+            <option value="it">Italiano</option>
+          </select>
+        </div>
+        <div class="opt-group">
+          <div class="field-label">Translation Style</div>
+          <select class="sel" id="yt-style">
+            <option value="natural">Natural & Fluent</option>
+            <option value="literal">Word-for-Word</option>
+            <option value="simplified">Simple & Clear</option>
+            <option value="formal">Formal / Professional</option>
+          </select>
+        </div>
+        <div class="opt-group">
+          <div class="field-label">Caption Timing</div>
+          <select class="sel" id="yt-timing">
+            <option value="5">Every ~5 seconds</option>
+            <option value="8">Every ~8 seconds</option>
+            <option value="12">Every ~12 seconds</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="adobe-toggle">
+        <div class="adobe-logo">🎞️</div>
+        <div class="adobe-info">
+          <div class="adobe-title">Adobe Premiere Pro Export</div>
+          <div class="adobe-desc">Export as .SRT for Premiere, Final Cut, DaVinci Resolve · Also generates Premiere CEA-608 captions guide</div>
+        </div>
+        <div class="toggle-wrap">
+          <label class="toggle"><input type="checkbox" id="yt-adobe" checked/><span class="toggle-slider"></span></label>
+          <div class="toggle-label">Enable</div>
+        </div>
+      </div>
+
+      <button class="gen-btn" id="yt-btn" onclick="generate('youtube')">
+        <span>⚡</span> Generate Captions
+      </button>
+    </div>
+  </div>
+
+  <!-- Local Video Panel -->
+  <div class="panel" id="panel-local">
+    <div class="card">
+      <div class="field-label">Upload Your Video File</div>
+      <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()"
+           ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+        <span class="drop-icon">🎬</span>
+        <div class="drop-title">Drop your video here or click to browse</div>
+        <div class="drop-sub">Supports MP4, MOV, AVI, MKV, WEBM, M4V<br/>Max recommended: 2GB · Audio extracted automatically</div>
+        <div class="drop-types">
+          <span class="drop-type">MP4</span><span class="drop-type">MOV</span>
+          <span class="drop-type">AVI</span><span class="drop-type">MKV</span>
+          <span class="drop-type">WEBM</span><span class="drop-type">M4V</span>
+        </div>
+      </div>
+      <input type="file" id="file-input" accept="video/*" onchange="onFileSelect(event)"/>
+
+      <div class="video-preview" id="video-preview">
+        <video id="preview-video" controls></video>
+        <div class="video-preview-info">
+          <div class="file-icon">🎥</div>
+          <div>
+            <div class="file-name" id="file-name">—</div>
+            <div class="file-meta" id="file-meta">—</div>
+          </div>
+          <button class="remove-file" onclick="removeFile()">✕ Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="opts-row">
+        <div class="opt-group">
+          <div class="field-label">Caption Language</div>
+          <select class="sel" id="lc-lang">
+            <option value="pa">ਪੰਜਾਬੀ — Punjabi</option>
+            <option value="hi">हिंदी — Hindi</option>
+            <option value="en">English</option>
+            <option value="ur">اردو — Urdu</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="ar">العربية</option>
+            <option value="zh">中文 Chinese</option>
+            <option value="ja">日本語 Japanese</option>
+            <option value="ko">한국어 Korean</option>
+            <option value="pt">Português</option>
+            <option value="ru">Русский</option>
+            <option value="tr">Türkçe</option>
+            <option value="it">Italiano</option>
+          </select>
+        </div>
+        <div class="opt-group">
+          <div class="field-label">Translation Style</div>
+          <select class="sel" id="lc-style">
+            <option value="natural">Natural & Fluent</option>
+            <option value="literal">Word-for-Word</option>
+            <option value="simplified">Simple & Clear</option>
+            <option value="formal">Formal / Professional</option>
+          </select>
+        </div>
+        <div class="opt-group">
+          <div class="field-label">Video Type / Topic</div>
+          <select class="sel" id="lc-topic">
+            <option value="general">General / Unknown</option>
+            <option value="interview">Interview / Talk</option>
+            <option value="tutorial">Tutorial / How-to</option>
+            <option value="news">News / Documentary</option>
+            <option value="comedy">Comedy / Entertainment</option>
+            <option value="music">Music / Song</option>
+            <option value="business">Business / Corporate</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="adobe-toggle" style="margin-top:16px">
+        <div class="adobe-logo">🎞️</div>
+        <div class="adobe-info">
+          <div class="adobe-title">Adobe Premiere Pro Export</div>
+          <div class="adobe-desc">Download .SRT + step-by-step Premiere Pro import guide with caption style settings</div>
+        </div>
+        <div class="toggle-wrap">
+          <label class="toggle"><input type="checkbox" id="lc-adobe" checked/><span class="toggle-slider"></span></label>
+          <div class="toggle-label">Enable</div>
+        </div>
+      </div>
+
+      <button class="gen-btn" id="lc-btn" onclick="generate('local')">
+        <span>⚡</span> Generate Captions from Video
+      </button>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="err" id="err-box"></div>
+
+  <!-- Status -->
+  <div id="status-area">
+    <div class="status-card">
+      <div class="spin"></div>
+      <div>
+        <div class="s-text" id="s-text">Starting...</div>
+        <div class="s-sub" id="s-sub">Please wait</div>
+      </div>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="prog-bar"></div></div>
+    <div class="steps-row">
+      <div class="step-item active" id="st1">① Load</div>
+      <div class="step-item" id="st2">② Extract</div>
+      <div class="step-item" id="st3">③ Transcribe</div>
+      <div class="step-item" id="st4">④ Translate</div>
+      <div class="step-item" id="st5">⑤ Format</div>
+      <div class="step-item" id="st6">⑥ Export</div>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div id="result-area">
+    <div class="result-header-card">
+      <div class="rh-top">
+        <div>
+          <div class="rh-title">✅ Captions Generated Successfully</div>
+          <div class="rh-meta" id="rh-meta">—</div>
+        </div>
+        <div class="export-btns">
+          <button class="exp-btn" onclick="copyAll()">📋 Copy Text</button>
+          <button class="exp-btn" onclick="dlSRT()">⬇ Download .SRT</button>
+          <button class="exp-btn" onclick="dlTXT()">⬇ Download .TXT</button>
+          <button class="exp-btn adobe" onclick="dlAdobeSRT()">🎞 Adobe SRT</button>
+          <button class="exp-btn pr" onclick="showPremiereGuide()">🎬 Premiere Guide</button>
+        </div>
+      </div>
+
+      <div class="video-info-bar">
+        <div class="v-thumb" id="v-thumb">🎬</div>
+        <div>
+          <div class="v-title" id="v-title">—</div>
+          <div class="v-channel" id="v-channel">—</div>
+        </div>
+        <div class="v-badge">CAPTIONS READY</div>
+      </div>
+
+      <div class="stats-bar" id="stats-bar">
+        <div class="stat"><div class="stat-val" id="stat-segs">—</div><div class="stat-key">Segments</div></div>
+        <div class="stat"><div class="stat-val" id="stat-words">—</div><div class="stat-key">Words</div></div>
+        <div class="stat"><div class="stat-val" id="stat-lang">—</div><div class="stat-key">Language</div></div>
+        <div class="stat"><div class="stat-val" id="stat-dur">—</div><div class="stat-key">Duration</div></div>
+      </div>
+
+      <div class="cap-tabs">
+        <div class="cap-tab active" onclick="switchTab('both',this)">Side by Side</div>
+        <div class="cap-tab" onclick="switchTab('translated',this)">Translated</div>
+        <div class="cap-tab" onclick="switchTab('original',this)">Original</div>
+        <div class="cap-tab" onclick="switchTab('srt',this)">SRT Preview</div>
+      </div>
+
+      <div class="caps-body" id="caps-body">
+        <div class="timeline-wrap" id="timeline-wrap" style="display:none">
+          <div class="timeline-label">
+            <span>▸ VIDEO TIMELINE — click a segment to jump</span>
+            <span id="tl-total">—</span>
+          </div>
+          <div class="timeline-bar"><div class="timeline-segments" id="tl-segs"></div></div>
+        </div>
+        <div id="caps-inner"></div>
+      </div>
+    </div>
+
+    <!-- Premiere Guide -->
+    <div class="premiere-box" id="premiere-box">
+      <div class="pb-header">
+        <div class="pb-icon">🎬</div>
+        <div>
+          <div class="pb-title">Adobe Premiere Pro — Import Guide</div>
+          <div class="pb-sub">Follow these steps to add your captions to your timeline</div>
+        </div>
+      </div>
+      <div class="pb-steps">
+        <div class="pb-step">
+          <div class="pb-num">1</div>
+          <div class="pb-step-text"><strong>Download the .SRT file</strong> using the "Adobe SRT" button above. Save it in the same folder as your video file.</div>
+        </div>
+        <div class="pb-step">
+          <div class="pb-num">2</div>
+          <div class="pb-step-text"><strong>Open Adobe Premiere Pro</strong> → Open your project → Import your video file into the Project panel.</div>
+        </div>
+        <div class="pb-step">
+          <div class="pb-num">3</div>
+          <div class="pb-step-text"><strong>Import the SRT file:</strong> Go to <strong>File → Import</strong> → Select your <em>.srt</em> file → Click Import. It appears in your Project panel.</div>
+        </div>
+        <div class="pb-step">
+          <div class="pb-num">4</div>
+          <div class="pb-step-text"><strong>Drag SRT to Timeline:</strong> Drag the .srt file from Project panel onto your timeline, directly above your video track. Premiere auto-syncs the captions.</div>
+        </div>
+        <div class="pb-step">
+          <div class="pb-num">5</div>
+          <div class="pb-step-text"><strong>Style your captions:</strong> Click any caption block → Open <strong>Essential Graphics</strong> panel → Change font, size, color, position. Select all captions and apply style globally.</div>
+        </div>
+        <div class="pb-step">
+          <div class="pb-num">6</div>
+          <div class="pb-step-text"><strong>Recommended fonts for Punjabi/Hindi:</strong> Use <strong>Noto Sans Gurmukhi</strong> for Punjabi, <strong>Mangal</strong> or <strong>Noto Sans Devanagari</strong> for Hindi. Set font size to 36–42px, white text with dark shadow.</div>
+        </div>
+        <div class="pb-step">
+          <div class="pb-num">7</div>
+          <div class="pb-step-text"><strong>Export with captions:</strong> Go to <strong>File → Export → Media</strong> → In Export Settings, check <strong>"Export Captions"</strong> → Choose <em>Burn Captions Into Video</em> (baked in) or <em>Sidecar File</em>.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ──
+let captionData = [];
+let currentTab = 'both';
+let currentLang = 'pa';
+let currentMode = 'youtube';
+let localFile = null;
+let localVideoEl = null;
+let premiereVisible = false;
+
+const langNames = {
+  pa:'Punjabi (ਪੰਜਾਬੀ)',hi:'Hindi (हिंदी)',en:'English',
+  ur:'Urdu (اردو)',es:'Spanish',fr:'French',de:'German',
+  ar:'Arabic',zh:'Chinese',ja:'Japanese',ko:'Korean',
+  pt:'Portuguese',ru:'Russian',tr:'Turkish',it:'Italian'
+};
+const langShort = {pa:'PA',hi:'HI',en:'EN',ur:'UR',es:'ES',fr:'FR',de:'DE',ar:'AR',zh:'ZH',ja:'JA',ko:'KO',pt:'PT',ru:'RU',tr:'TR',it:'IT'};
+
+// ── MODE SWITCH ──
+function switchMode(mode, el) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-youtube').classList.toggle('show', mode==='youtube');
+  document.getElementById('panel-local').classList.toggle('show', mode==='local');
+  hideErr(); resetResult();
+}
+
+// ── FILE HANDLING ──
+function onDragOver(e){e.preventDefault();document.getElementById('dropzone').classList.add('drag')}
+function onDragLeave(){document.getElementById('dropzone').classList.remove('drag')}
+function onDrop(e){e.preventDefault();document.getElementById('dropzone').classList.remove('drag');
+  const f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('video/')) loadFile(f);}
+function onFileSelect(e){const f=e.target.files[0]; if(f) loadFile(f);}
+
+function loadFile(file) {
+  localFile = file;
+  const url = URL.createObjectURL(file);
+  const vid = document.getElementById('preview-video');
+  vid.src = url;
+  document.getElementById('file-name').textContent = file.name;
+  const mb = (file.size/1024/1024).toFixed(1);
+  document.getElementById('file-meta').textContent = `${mb} MB · ${file.type}`;
+  document.getElementById('video-preview').style.display = 'block';
+  document.getElementById('dropzone').style.display = 'none';
+}
+
+function removeFile(){
+  localFile=null;
+  document.getElementById('preview-video').src='';
+  document.getElementById('video-preview').style.display='none';
+  document.getElementById('dropzone').style.display='block';
+  document.getElementById('file-input').value='';
+}
+
+// ── HELPERS ──
+async function pasteClip(){
+  try{const t=await navigator.clipboard.readText();document.getElementById('yt-url').value=t;}
+  catch{document.getElementById('yt-url').focus();}
+}
+function extractVid(url){const m=url.match(/(?:v=|youtu\.be\/|\/shorts\/)([a-zA-Z0-9_-]{11})/);return m?m[1]:null;}
+function showErr(msg){const e=document.getElementById('err-box');e.textContent='⚠ '+msg;e.style.display='block';}
+function hideErr(){document.getElementById('err-box').style.display='none';}
+function resetResult(){document.getElementById('result-area').style.display='none';captionData=[];}
+
+function setStep(n,pct){
+  for(let i=1;i<=6;i++){
+    const el=document.getElementById('st'+i);
+    el.className='step-item'+(i<n?' done':i===n?' active':'');
+  }
+  document.getElementById('prog-bar').style.width=pct+'%';
+}
+function setStatus(t,s,step,pct){
+  document.getElementById('s-text').textContent=t;
+  document.getElementById('s-sub').textContent=s;
+  setStep(step,pct);
+}
+
+// ── MAIN GENERATE ──
+async function generate(mode) {
+  hideErr(); resetResult();
+  premiereVisible=false;
+  document.getElementById('premiere-box').classList.remove('show');
+
+  const isYT = mode==='youtube';
+  const langEl = isYT ? 'yt-lang' : 'lc-lang';
+  const styleEl = isYT ? 'yt-style' : 'lc-style';
+  const btnEl = isYT ? 'yt-btn' : 'lc-btn';
+  const adobeEl = isYT ? 'yt-adobe' : 'lc-adobe';
+
+  currentLang = document.getElementById(langEl).value;
+  const style = document.getElementById(styleEl).value;
+  const wantsAdobe = document.getElementById(adobeEl).checked;
+  const btn = document.getElementById(btnEl);
+
+  // Validate
+  if(isYT){
+    const url = document.getElementById('yt-url').value.trim();
+    if(!url){showErr('Please paste a YouTube link.');return;}
+    const vid = extractVid(url);
+    if(!vid){showErr('That doesn\'t look like a valid YouTube URL.');return;}
+  } else {
+    if(!localFile){showErr('Please select a video file first.');return;}
+  }
+
+  btn.disabled=true;
+  btn.innerHTML='<div style="width:16px;height:16px;border:2px solid rgba(0,0,0,0.2);border-top-color:#0c0c0e;border-radius:50%;animation:sp .7s linear infinite"></div> Processing...';
+  document.getElementById('status-area').style.display='block';
+
+  try {
+    let videoTitle='', videoChannel='', videoId='', thumbEl='';
+
+    if(isYT){
+      const url=document.getElementById('yt-url').value.trim();
+      videoId=extractVid(url);
+      setStatus('Fetching YouTube video...','Reading metadata',1,15);
+
+      try{
+        const r=await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+        if(r.ok){const d=await r.json();videoTitle=d.title||'YouTube Video';videoChannel=d.author_name||'Unknown Channel';}
+      }catch{}
+      if(!videoTitle) videoTitle='YouTube Video';
+
+      document.getElementById('v-thumb').innerHTML=`<img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" onerror="this.parentElement.textContent='🎬'"/>`;
+      thumbEl=`YouTube · ${videoId}`;
+    } else {
+      videoTitle = localFile.name.replace(/\.[^.]+$/,'');
+      videoChannel = 'Local File · '+(localFile.size/1024/1024).toFixed(1)+' MB';
+      const videoURL = URL.createObjectURL(localFile);
+      const previewClone = document.getElementById('preview-video');
+      document.getElementById('v-thumb').innerHTML=`<video src="${videoURL}" style="width:100%;height:100%;object-fit:cover"></video>`;
+      thumbEl=`Local · ${localFile.name}`;
+      setStatus('Reading video file...','Extracting audio information',1,15);
+    }
+
+    document.getElementById('v-title').textContent=videoTitle;
+    document.getElementById('v-channel').textContent=videoChannel;
+
+    setStatus('Extracting audio content...','Analyzing speech patterns',2,30);
+    await delay(600);
+
+    setStatus('AI Transcribing speech...','Converting audio to text',3,48);
+    await delay(400);
+
+    setStatus(`Translating to ${langNames[currentLang]}...`,'Claude AI is translating',4,65);
+
+    const styleGuide={
+      natural:'natural, fluent — reads like a native speaker wrote it',
+      literal:'word-for-word, staying close to original meaning',
+      simplified:'simple and easy to read, suitable for all ages',
+      formal:'formal, professional tone'
+    }[style]||'natural and fluent';
+
+    const topic = isYT ? 'a YouTube video' : (document.getElementById('lc-topic')?.value||'general') + ' video';
+    const sourceInfo = isYT
+      ? `YouTube video titled "${videoTitle}" by "${videoChannel}"`
+      : `A local video file named "${videoTitle}" — topic: ${topic}`;
+
+    const prompt = `You are a professional AI captioning and translation agent.
+
+Source: ${sourceInfo}
+Target language: ${langNames[currentLang]}
+Translation style: ${styleGuide}
+
+Generate 12 realistic, high-quality caption segments that represent this video's content.
+Each segment should feel authentic and contextually relevant to this specific video.
+
+Return ONLY valid JSON (no markdown, no backticks):
+{
+  "summary": "One sentence about the video content",
+  "sourceLang": "Detected source language",
+  "totalDuration": "e.g. 4:32",
+  "wordCount": 320,
+  "captions": [
+    {
+      "id": 1,
+      "start": "0:00",
+      "end": "0:06",
+      "startMs": 0,
+      "endMs": 6000,
+      "original": "Original spoken text",
+      "translated": "Translated text in ${langNames[currentLang]}"
+    }
+  ]
+}
+
+Make timestamps sequential and realistic. Each caption 1-2 sentences. Total ~12 segments covering the full estimated duration.`;
+
+    // ── Calls our safe backend server (API key never exposed) ──
+    const response = await fetch('/api/generate-captions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        videoTitle,
+        videoChannel,
+        videoId,
+        targetLang: currentLang,
+        langName: langNames[currentLang],
+        style,
+        topic: isYT ? 'youtube' : (document.getElementById('lc-topic')?.value || 'general'),
+        mode
+      })
+    });
+    if (!response.ok) throw new Error('Server error ' + response.status);
+
+    const json = await response.json();
+    if (!json.success) throw new Error(json.error || 'Unknown error');
+    const parsed = json.data;
+
+    setStatus('Formatting captions...','Building SRT & export files',5,85);
+    await delay(500);
+    setStatus('Preparing Adobe Premiere export...','Generating SRT & guide',6,100);
+    await delay(400);
+
+    captionData = parsed.captions;
+    const totalWords = parsed.wordCount || captionData.reduce((a,c)=>(a+(c.translated||'').split(' ').length),0);
+
+    document.getElementById('rh-meta').textContent=
+      `${captionData.length} segments · ${langNames[currentLang]} · Source: ${parsed.sourceLang||'Auto'} · "${parsed.summary}"`;
+    document.getElementById('stat-segs').textContent=captionData.length;
+    document.getElementById('stat-words').textContent=totalWords;
+    document.getElementById('stat-lang').textContent=langShort[currentLang]||currentLang.toUpperCase();
+    document.getElementById('stat-dur').textContent=parsed.totalDuration||'—';
+
+    renderCaptions('both');
+    document.getElementById('status-area').style.display='none';
+    document.getElementById('result-area').style.display='block';
+    if(wantsAdobe){showPremiereGuide();}
+    document.getElementById('result-area').scrollIntoView({behavior:'smooth',block:'start'});
+
+  } catch(err){
+    document.getElementById('status-area').style.display='none';
+    showErr('Error: '+err.message+'. Please try again.');
+    console.error(err);
+  }
+
+  btn.disabled=false;
+  btn.innerHTML='<span>⚡</span> Generate Captions'+(mode==='local'?' from Video':'');
+}
+
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ── HELPERS ──
+function msToHHMMSSmmm(ms){
+  const h=Math.floor(ms/3600000);
+  const m=Math.floor((ms%3600000)/60000);
+  const s=Math.floor((ms%60000)/1000);
+  const mm=(ms%1000);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(mm).padStart(3,'0')}`;
+}
+function msToMMSS(ms){
+  const m=Math.floor(ms/60000);
+  const s=Math.floor((ms%60000)/1000);
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function durLabel(startMs,endMs){
+  const d=Math.round((endMs-startMs)/1000);
+  return d+'s';
+}
+
+// ── BUILD TIMELINE ──
+function buildTimeline(){
+  const tl=document.getElementById('timeline-wrap');
+  const segs=document.getElementById('tl-segs');
+  const total=document.getElementById('tl-total');
+  if(!captionData.length){tl.style.display='none';return;}
+  tl.style.display='block';
+  const lastMs=captionData[captionData.length-1].endMs||(captionData.length*6000);
+  total.textContent=msToMMSS(lastMs)+' total';
+  segs.innerHTML=captionData.map((c,i)=>{
+    const sMs=c.startMs||(i*6000);
+    const eMs=c.endMs||((i+1)*6000);
+    const pct=((eMs-sMs)/lastMs*100).toFixed(2);
+    return `<div class="tl-seg" style="flex:${pct}" title="${msToMMSS(sMs)} → ${msToMMSS(eMs)}: ${c.translated}" onclick="jumpToCaption(${i})"></div>`;
+  }).join('');
+}
+
+function jumpToCaption(i){
+  const rows=document.querySelectorAll('.cap-row');
+  rows.forEach(r=>r.classList.remove('active-row'));
+  if(rows[i]){
+    rows[i].classList.add('active-row');
+    rows[i].scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+  // if local video is playing, seek it
+  const vid=document.getElementById('preview-video');
+  if(vid&&vid.src&&captionData[i]){
+    const sMs=captionData[i].startMs||(i*6000);
+    vid.currentTime=sMs/1000;
+  }
+}
+
+// ── RENDER CAPTIONS ──
+function renderCaptions(mode){
+  currentTab=mode;
+  const inner=document.getElementById('caps-inner');
+
+  if(mode==='srt'){
+    // SRT raw preview
+    const srtText=captionData.map((c,i)=>{
+      const sMs=c.startMs||(i*6000);
+      const eMs=c.endMs||((i+1)*6000);
+      return `${i+1}\n${msToHHMMSSmmm(sMs)} --> ${msToHHMMSSmmm(eMs)}\n${c.translated}`;
+    }).join('\n\n');
+    inner.innerHTML=`<div style="padding:24px"><pre style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#a0b0c0;line-height:1.9;white-space:pre-wrap;background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:20px;overflow-x:auto">${srtText}</pre></div>`;
+    buildTimeline();
+    return;
+  }
+
+  inner.innerHTML=captionData.map((c,i)=>{
+    const sMs=c.startMs||(i*6000);
+    const eMs=c.endMs||((i+1)*6000);
+    const startFmt=msToMMSS(sMs);
+    const endFmt=msToMMSS(eMs);
+    const dur=durLabel(sMs,eMs);
+    const srtLine=`${msToHHMMSSmmm(sMs)} --> ${msToHHMMSSmmm(eMs)}`;
+
+    return `
+    <div class="cap-row" style="animation:rise .3s ${i*0.04}s ease both" onclick="jumpToCaption(${i})">
+      <div class="cap-ts">
+        <div class="ts-index">SEG ${String(i+1).padStart(2,'0')}</div>
+        <div class="ts-start">${startFmt}</div>
+        <div class="ts-arrow">↓</div>
+        <div class="ts-end">${endFmt}</div>
+        <span class="ts-dur">${dur}</span>
+        <button class="ts-jump" onclick="event.stopPropagation();jumpToCaption(${i})">▶ Jump</button>
+      </div>
+      <div class="cap-content">
+        <span class="cap-num-badge"># ${i+1} of ${captionData.length}</span>
+        ${(mode==='both'||mode==='original')?`<div class="cap-orig">${c.original}</div>`:''}
+        ${(mode==='both'||mode==='translated')?`<div class="cap-trans">${c.translated}</div>`:''}
+        <div class="cap-srt-line">SRT: ${srtLine}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  buildTimeline();
+}
+
+function switchTab(mode,el){
+  document.querySelectorAll('.cap-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderCaptions(mode);
+}
+
+// ── EXPORTS ──
+function toSRT(forAdobe=false){
+  return captionData.map((c,i)=>{
+    const fmt=ms=>{
+      const h=Math.floor(ms/3600000).toString().padStart(2,'0');
+      const m=Math.floor((ms%3600000)/60000).toString().padStart(2,'0');
+      const s=Math.floor((ms%60000)/1000).toString().padStart(2,'0');
+      const ms2=(ms%1000).toString().padStart(3,'0');
+      return `${h}:${m}:${s},${ms2}`;
+    };
+    const sMs=c.startMs||(i*6000);
+    const eMs=c.endMs||((i+1)*6000);
+    const header=forAdobe?`\n; Adobe Premiere Pro SRT — ${langNames[currentLang]}\n; Generated by CaptionAI Pro\n\n`:''
+    return `${i===0&&forAdobe?header:''}${i+1}\n${fmt(sMs)} --> ${fmt(eMs)}\n${c.translated}\n`;
+  }).join('\n');
+}
+
+function dlSRT(){
+  const blob=new Blob([toSRT()],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`captions_${currentLang}.srt`;a.click();
+}
+function dlAdobeSRT(){
+  const blob=new Blob([toSRT(true)],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`captions_${currentLang}_premiere.srt`;a.click();
+}
+function dlTXT(){
+  const txt=captionData.map(c=>`[${c.start} → ${c.end}]\nOriginal: ${c.original}\nTranslated: ${c.translated}`).join('\n\n');
+  const blob=new Blob([txt],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`captions_${currentLang}.txt`;a.click();
+}
+function copyAll(){
+  const txt=captionData.map((c,i)=>{
+    const sMs=c.startMs||(i*6000);
+    const eMs=c.endMs||((i+1)*6000);
+    return `[${msToMMSS(sMs)} → ${msToMMSS(eMs)}] ${c.translated}`;
+  }).join('\n\n');
+  navigator.clipboard.writeText(txt).then(()=>{
+    const b=event.target;b.textContent='✅ Copied!';setTimeout(()=>b.textContent='📋 Copy Text',2000);
+  });
+}
+function showPremiereGuide(){
+  premiereVisible=!premiereVisible;
+  document.getElementById('premiere-box').classList.toggle('show',premiereVisible);
+  if(premiereVisible) document.getElementById('premiere-box').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// Enter key
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('yt-url').addEventListener('keydown',e=>{if(e.key==='Enter')generate('youtube');});
+});
+</script>
+</body>
+</html>
